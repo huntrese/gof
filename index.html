@@ -1,0 +1,50 @@
+<html lang="en">
+<head>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+	<meta content="utf-8" http-equiv="encoding">
+	<title>Conway's Game of Life</title>
+	<style>
+		canvas {
+			border: 2px solid #333;
+			cursor: pointer;
+		}
+
+		.container {
+			/* max-width: 600px; */
+			margin: 0 auto;
+		}
+		html, body {
+			width: 100%;
+			height: 100%;
+			margin: 0;
+			padding: 0;
+			overflow: hidden; /* Disable scrollbars */
+			}
+	</style>
+</head>
+<body>
+
+		<!-- <h1>Conway's Game of Life</h1> -->
+
+		<canvas id="gol-canvas" width="1500vw" height="1000vh"></canvas>
+	<div class="container">
+
+		<br/><br/>
+
+		<h3>Generation counter: <span id="generation-count">0</span></h3>
+
+		<button id="start">start</button>
+		<button id="pause">pause</button>
+		<button id="step">step generation</button>
+		<button id="reset">reset</button>
+		<br/><br/>
+		<label for="interval">Generation step interval in milliseconds (200 - 1000ms): </label>
+		<br/>
+		<input type="range" id="interval" value="200" min="200" max="1000" oninput="document.querySelector('#intervalLabel').innerHTML = this.value+'ms';"/>
+		<em id="intervalLabel">default: 200ms</em>
+
+	</div>
+<script src="script.js"></script>
+
+</body>
+</html>
