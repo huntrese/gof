@@ -2,30 +2,96 @@
 <head>
 	<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
 	<meta content="utf-8" http-equiv="encoding">
-	<title>Conway's Game of Life</title>
-	<style>
-		canvas {
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conway's Game of Life</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+ 		canvas {
 			border: 2px solid #333;
 			cursor: pointer;
+			width: 100vw; /* Set width to 100% of viewport width */
+			height: 100vh; 
 		}
 
-		.container {
-			/* max-width: 600px; */
+		/* .container {
+			max-width: 600px;
 			margin: 0 auto;
-		}
-		html, body {
+		} */
+
+		html,
+		body {
 			width: 100%;
 			height: 100%;
 			margin: 0;
 			padding: 0;
 			overflow: hidden; /* Disable scrollbars */
-			}
+		}
+		
+		#slider-overlay {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        #slider-overlay input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 5px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        #slider-overlay input[type="range"]:hover {
+            opacity: 1;
+        }
+
+        #slider-overlay input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        #slider-overlay input[type="range"]::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
 	</style>
 </head>
 <body>
 
 		<!-- <h1>Conway's Game of Life</h1> -->
-
+		<div id="slider-overlay">
+			<input type="range" min="1" max="10" value="5" id="speed-slider">
+		</div>
+		<div id="skip-container">
+			<input type="number" id="skip-input" placeholder="Enter number of generations to skip">
+			<button id="skip-button">Skip</button>
+		</div>
+		  
 		<canvas id="gol-canvas" width="1500vw" height="1000vh"></canvas>
 	<div class="container">
 
