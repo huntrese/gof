@@ -64,20 +64,31 @@
 			decideIfCellAliveInNextGen(row, col) {
 				const cell = this.dataMatrix[row][col];
 				const neighborsData = this.numberOfNeighbours(row, col, cell.species); // Remove species argument
-				neighborsData.allies-=neighborsData.enemies;
 
 				if (cell.isAlive) {
-					if (neighborsData.allies === 3 || neighborsData.allies === 2) {
+					if ( neighborsData.allies === 3 || neighborsData.allies === 2 ) {
+
+						
 						return true;
 					} else {
+						if (neighborsData.allies === 4){
+							if (Math.round(cell.species/4+Math.random())==1){
+								return true;
+							}
+						}
 						return false;
 					}
 				} else {
-					if (neighborsData.allies === 3) {
+					if (neighborsData.allies === 3 ) {
 						// Assign the majority species among neighbors to the newly created cell
 						cell.species = neighborsData.majoritySpecies;
 						return true;
 					} else {
+						if (cell.species === 0){
+							if (Math.round(Math.random()+0.49)==1){
+								return true;
+							}
+						}
 						return false;
 					}
 				}
@@ -100,12 +111,22 @@
 						const neighborCell = this.dataMatrix[newRow][newCol];
 						if (neighborCell.isAlive) {
 							allies++;
-							// Check if the neighbor is an enemy and determine if it prevents revival
+							// Check if the neighbor is an enemy and determine if enemy converts species
 							if (neighborCell.species !== -1 && currentSpecies !== neighborCell.species) {
-								const preventRevivalChance = Math.random(); // Random chance between 0 and 1
-								if (preventRevivalChance < 0.5) {
-									// Enemy prevents revival with 50% chance
-									// enemies++;
+								enemies++;
+								// if (currentSpecies === 0){
+								// 	if (Math.round(Math.random()+0.4)==1){
+								// 		enemies --;
+								// 	}
+								// }
+								if (enemies >= 4) {
+									// Convert the species of the current cell to the species of the majority neighboring cell
+									if (Math.round(currentSpecies*Math.random()-0.4)==1 && currentSpecies!=-1){
+										this.dataMatrix[row][col].species = neighborCell.species;
+
+									}
+									// this.dataMatrix[row][col].species = neighborCell.species;
+
 								}
 							}
 							// Increment count for the species
@@ -137,7 +158,10 @@
 				for (let i = 0; i < this.rows; i++) {
 					for (let j = 0; j < this.cols; j++) {
 						newDataMatrix[i][j].isAlive = this.decideIfCellAliveInNextGen(i, j);
-						newDataMatrix[i][j].species = this.dataMatrix[i][j].species; // Copy species information
+						newDataMatrix[i][j].species = -1;
+						if (newDataMatrix[i][j].isAlive){
+							newDataMatrix[i][j].species = this.dataMatrix[i][j].species; // Copy species information
+						}
 					}
 				}
 				this.dataMatrix = newDataMatrix;
@@ -243,7 +267,7 @@
 						prevCell = { row, col };
 						drawGrid();
 					}
-				}, 10);
+				}, 5);
 			}
 		}
 		
@@ -329,7 +353,7 @@
 		const speedSlider = document.querySelector('#speed-slider');
 		
 		speedSlider.addEventListener('input', function () {
-			intervalBetweenGenerations = this.value * 30;
+			intervalBetweenGenerations = this.value * 20;
 		});
 		
 		document.getElementById('skip-button').addEventListener('click', skipGenerations);
@@ -357,7 +381,8 @@
 			const regionWidth = canvas.width / 2;
 			const regionHeight = canvas.height / 2;
 			const colors = ['#ffcccc', '#ccffcc', '#ccccff', '#ffffcc']; // Colors for each region
-		
+			const colorss = ['#ffcccc', '#ccffcc', '#222ff', '#faf223']; // Colors for each region
+			color="#212121"
 			// Render background rectangles for each region
 			for (let r = 0; r < 2; r++) {
 				for (let c = 0; c < 2; c++) {
@@ -374,7 +399,7 @@
 						const x = (i + 1) * 10;
 						const y = (j + 1) * 10;
 						let originalColor = colors[cell.species];
-						let darkerColor = darkenColor(originalColor, 40); // Adjust darkness level as needed
+						let darkerColor = originalColor.replace("c","1") // Adjust darkness level as needed
 						
 						// Set the fillStyle to the darker color
 						ctx.fillStyle = darkerColor;
