@@ -394,14 +394,24 @@
 			const y = (e.clientY - offsetY) * scaleY;
 			const col = Math.floor(x / WIDTH_X);
 			const row = Math.floor(y / WIDTH_Y);
-			if (row !== prevCell.row || col !== prevCell.col) {
+			
+			// Check for middle mouse button click
+			const isMiddleClick = e.button === 1;
+		
+			if (!isMiddleClick && (row !== prevCell.row || col !== prevCell.col)) {
 				if (!game.dataMatrix[row][col].isAlive) { // Only toggle species if the cell is dead
 					game.toggleCell(row, col, cell_col);
 				}
 				prevCell = { row, col };
 				drawGrid();
+			} else if (isMiddleClick) { // Middle mouse button click
+				// Reset the cell to species -1 (empty)
+				game.toggleCell(row, col, -1);
+				prevCell = { row, col };
+				drawGrid();
 			}
 		}
+		
 		
 		function stepGenerationHandler() {
 			GENERATION_COUNT += 1;
