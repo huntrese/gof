@@ -558,4 +558,45 @@
 		// 	game.toggleCell(row, col);
 		// 	drawGrid();
 		// }
-		
+document.getElementById('start').addEventListener('click', startClickHandler);
+document.getElementById('pause').addEventListener('click', pauseClickHandler);
+document.getElementById('reset').addEventListener('click', resetClickHandler);
+document.getElementById('mute').addEventListener('click', muteClickHandler);
+const backgroundMusic = document.getElementById('background-music');
+
+function startClickHandler() {
+    pauseClickHandler(); 
+    backgroundMusic.play();
+	document.getElementById('team-history').style.display = 'block'; // Afișați istoria despre echipe
+    document.getElementById('team-history').addEventListener('click', startGameAfterHistory); // Adăugați eveniment de click pentru a porni jocul după ce utilizatorul a citit istoria
+}
+
+function startGameAfterHistory() {
+    document.getElementById('team-history').removeEventListener('click', startGameAfterHistory); // Eliminați evenimentul de click pentru a evita repornirea jocului accidental
+    document.getElementById('team-history').style.display = 'none'; // Ascundeți containerul de istorie
+    function animate() {
+        stepGenerationHandler();
+        TIMEOUT_ID = setTimeout(animate, intervalBetweenGenerations);
+    }
+    TIMEOUT_ID = setTimeout(animate, intervalBetweenGenerations);
+}
+function pauseClickHandler() {
+    clearTimeout(TIMEOUT_ID);
+	backgroundMusic.pause();
+}
+
+function resetClickHandler() {
+    pauseClickHandler();
+    updateGenerationCount(true);
+    game.resetMatrixToZero(game.dataMatrix);
+    generationHistory.length = 0;
+    drawGrid();
+}
+
+function muteClickHandler() {
+    if (backgroundMusic.paused) {
+        backgroundMusic.play(); 
+    } else {
+        backgroundMusic.pause(); 
+    }
+}
