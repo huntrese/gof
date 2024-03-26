@@ -6,6 +6,7 @@
     <title>Conway's Game of Life</title>
     <style>
         body, html {
+            background-color: #f2f2f2;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -79,18 +80,70 @@
             background: #4CAF50;
             cursor: pointer;
         }
+
+        #skip-container {
+            float: left; 
+        }
+        
+        #control-buttons-container {
+            float: right; 
+        }
+
+        .button {
+            background-color: gray;
+            border: none;
+            color: white;
+            padding: 10px 20px; 
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px; 
+            border-radius: 5px; 
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #555; 
+        }
+
+        .team-history {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50%; 
+            max-width: 900px; 
+            height: 80%; 
+            max-height: 80%;
+            background-color: rgba(0, 0, 0, 0.5); 
+            color: white; 
+            font-size: 20px; 
+            padding: 20px; 
+            display: none; 
+        }
+
+
 	</style>
 </head>
 <body>
 
 		<!-- <h1>Conway's Game of Life</h1> -->
+        <audio id="background-music" src="music_war.mp3" loop></audio>
 		<div id="slider-overlay">
 			<input type="range" min="1" max="10" value="5" id="speed-slider">
 		</div>
 		<div id="skip-container">
-			<input type="number" id="skip-input" placeholder="Enter number of generations to skip">
-			<button id="skip-button">Skip</button>
-		</div>
+            <input type="number" id="skip-input" placeholder="Enter number of generations to skip">
+            <button id="skip-button" class="button">Skip</button>
+        </div>
+        
+        <div id="control-buttons-container">
+            <button id="start" class="button">Start Game</button>
+            <button id="pause" class="button">Pause</button>
+            <button id="reset" class="button">Reset</button>
+            <button id="mute" class="button">Mute</button>
+        </div>
+        
 		  
 		<canvas id="gol-canvas" width="1500vw" height="1000vh"></canvas>
 	<div class="container">
@@ -99,10 +152,10 @@
 
 		<h3>Generation counter: <span id="generation-count">0</span></h3>
 
-		<button id="start">start</button>
+		<!-- <button id="start">start</button>
 		<button id="pause">pause</button>
 		<button id="step">step generation</button>
-		<button id="reset">reset</button>
+		<button id="reset">reset</button> -->
 		<br/><br/>
 		<label for="interval">Generation step interval in milliseconds (200 - 1000ms): </label>
 		<br/>
@@ -110,6 +163,10 @@
 		<em id="intervalLabel">default: 200ms</em>
 
 	</div>
+    <div id="team-history" class="team-history">
+        sdgsascbasbcsma cascbsdhabckjhsab
+    </div>
+    
 <script src="script.js"></script>
 
 </body>
