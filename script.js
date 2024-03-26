@@ -394,14 +394,24 @@
 			const y = (e.clientY - offsetY) * scaleY;
 			const col = Math.floor(x / WIDTH_X);
 			const row = Math.floor(y / WIDTH_Y);
-			if (row !== prevCell.row || col !== prevCell.col) {
+			
+			// Check for middle mouse button click
+			const isMiddleClick = e.button === 1;
+		
+			if (!isMiddleClick && (row !== prevCell.row || col !== prevCell.col)) {
 				if (!game.dataMatrix[row][col].isAlive) { // Only toggle species if the cell is dead
 					game.toggleCell(row, col, cell_col);
 				}
 				prevCell = { row, col };
 				drawGrid();
+			} else if (isMiddleClick) { // Middle mouse button click
+				// Reset the cell to species -1 (empty)
+				game.toggleCell(row, col, -1);
+				prevCell = { row, col };
+				drawGrid();
 			}
 		}
+		
 		
 		function stepGenerationHandler() {
 			GENERATION_COUNT += 1;
@@ -502,7 +512,13 @@
 		}
 		
 		function drawGrid() {
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			// Create an off-screen canvas for double buffering
+			const offscreenCanvas = document.createElement('canvas');
+			offscreenCanvas.width = canvas.width;
+			offscreenCanvas.height = canvas.height;
+			const offscreenCtx = offscreenCanvas.getContext('2d');
+		
+			offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
 			let areAllCellsDead = true;
 		
 			const regionWidth = canvas.width / 2;
@@ -512,41 +528,55 @@
 			// Render background rectangles for each region
 			for (let r = 0; r < 2; r++) {
 				for (let c = 0; c < 2; c++) {
-					ctx.fillStyle = colors[r * 2 + c];
-					ctx.fillRect(c * regionWidth, r * regionHeight, regionWidth, regionHeight);
+					offscreenCtx.fillStyle = colors[r * 2 + c];
+					offscreenCtx.fillRect(c * regionWidth, r * regionHeight, regionWidth, regionHeight);
 				}
 			}
 		
-			for (let i = 0; i < ROWS; i++) {
-				for (let j = 0; j < COLS; j++) {
-					const cell = game.dataMatrix[i][j];
-					const terrain = game.terrainMatrix[i][j]; // Get terrain information
+			// Load cell image
+			const cellImage = new Image();
+			cellImage.src = 'cell.png';
 		
-					if (cell.isAlive) {
-						areAllCellsDead = false;
-						const x = (i + 1) * 10;
-						const y = (j + 1) * 10;
-						DARKEN="1";
-						let originalColor = colors[cell.species];
-						if (Math.random()<0.3){
-							DARKEN="7";
+			cellImage.onload = function () {
+				for (let i = 0; i < ROWS; i++) {
+					for (let j = 0; j < COLS; j++) {
+						const cell = game.dataMatrix[i][j];
+						const terrain = game.terrainMatrix[i][j]; // Get terrain information
+		
+						if (cell.isAlive) {
+							areAllCellsDead = false;
+							const x = (i + 1) * 10;
+							const y = (j + 1) * 10;
+		
+							if (Math.random() < 0.9) {
+								DARKEN = "1";
+								let originalColor = colors[cell.species];
+								let darkerColor = originalColor.replace("c", DARKEN); // Adjust darkness level as needed
+								offscreenCtx.fillStyle = darkerColor;
+								offscreenCtx.fillRect(j * 10, i * 10, 10, 10);
+							} else {
+								// Draw cell normally
+								offscreenCtx.drawImage(cellImage, y - 10, x - 10, 10, 10);
+							}
+						} else if (terrain === 1) { // If cell is not alive but terrain is mountainous
+							offscreenCtx.fillStyle = "#555"; // Color for mountainous terrain
+							offscreenCtx.fillRect(j * 10, i * 10, 10, 10); // Render mountain
 						}
-						let darkerColor = originalColor.replace("c", DARKEN); // Adjust darkness level as needed
-						
-						// Set the fillStyle to the darker color
-						ctx.fillStyle = darkerColor;
-						ctx.fillRect(y - 10, x - 10, 10, 10);
-					} else if (terrain === 1) { // If cell is not alive but terrain is mountainous
-						ctx.fillStyle = "#555"; // Color for mountainous terrain
-						ctx.fillRect(j * 10, i * 10, 10, 10); // Render mountain
 					}
 				}
-			}
 		
-			if (areAllCellsDead) {
-				pauseClickHandler();
-			}
+				// Copy the off-screen canvas to the visible canvas
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				ctx.drawImage(offscreenCanvas, 0, 0);
+		
+				if (areAllCellsDead) {
+					pauseClickHandler();
+				}
+			};
 		}
+		
+		
+		
 		
 		function darkenColor(color, amount) {
 			return '#' + color
