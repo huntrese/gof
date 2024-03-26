@@ -10,17 +10,17 @@
  */
 
 		class Cell {
-			constructor(row, col,kind=-1) {
+			constructor(row, col, kind = -1) {
 				this.row = row;
 				this.col = col;
 				this.isAlive = false;
-				this.species = kind
-				
+				this.species = kind;
+				this.isKiller = false; // New property to identify the killer cells
 			}
 		
 			toggle(who) {
 				this.isAlive = !this.isAlive;
-				this.species = who
+				this.species = who;
 			}
 		}
 		
@@ -29,7 +29,84 @@
 				this.rows = rows;
 				this.cols = cols;
 				this.dataMatrix = this.createMatrix(rows, cols);
+				this.terrainMatrix = this.generateTerrain(rows, cols); // Added terrain matrix
+			 // Define center coordinates of the circular infected area
+				this.infectedAreaCenterX = Math.floor(rows / 2);
+				this.infectedAreaCenterY = Math.floor(cols / 2);
+				this.infectedAreaRadius = 20; // Radius of the infected area
+		 	}
+			 isInInfectedArea(row, col) {
+				// Calculate the distance from the cell to the center of the infected area
+				const distance = Math.sqrt((row - this.infectedAreaCenterX) ** 2 + (col - this.infectedAreaCenterY) ** 2);
+				// Check if the distance is within the radius of the infected area
+				return distance <= this.infectedAreaRadius;
 			}
+
+			generateTerrain(rows, cols) {
+				const terrainMatrix = [];
+				
+				// Perlin noise parameters
+				const scale = 0.09; // Adjust this value to change the scale of the terrain features
+				const xOffset = Math.random() * 1; // Randomize the offset for variety
+				const yOffset = Math.random() * 1;
+				
+				// Perlin noise function
+				function perlin2D(x, y) {
+					const X = Math.floor(x) & 255,
+						Y = Math.floor(y) & 255;
+					
+					x -= Math.floor(x);
+					y -= Math.floor(y);
+					
+					const u = fade(x),
+						v = fade(y);
+					
+					const A = p[X] + Y,
+						AA = p[A],
+						AB = p[A + 1],
+						B = p[X + 1] + Y,
+						BA = p[B],
+						BB = p[B + 1];
+					
+					return lerp(v, lerp(u, grad(AA, x, y), grad(BA, x - 1, y)),
+						lerp(u, grad(AB, x, y - 1), grad(BB, x - 1, y - 1)));
+				}
+				
+				function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+				function lerp(t, a, b) { return a + t * (b - a); }
+				function grad(hash, x, y) {
+					const h = hash & 15;
+					const u = h < 8 ? x : y,
+						v = h < 4 ? y : h === 12 || h === 14 ? x : 0;
+					return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+				}
+				
+				const p = [];
+				for (let i = 0; i < 256; i++) {
+					p.push(Math.floor(Math.random() * 256));
+				}
+				
+				// Generate terrain matrix
+				for (let i = 0; i < rows; i++) {
+					terrainMatrix[i] = new Array(cols).fill(0); // Initialize with all cells as flat
+				}
+				
+				// Populate terrain matrix with mountainous terrain based on Perlin noise
+				for (let i = 0; i < rows; i++) {
+					for (let j = 0; j < cols; j++) {
+						const perlinValue = perlin2D(i * scale + xOffset, j * scale + yOffset);
+						// Threshold value to determine mountainous terrain
+						if (perlinValue > 0.2) { // Adjust threshold value for more contiguous mountain ranges
+							terrainMatrix[i][j] = 1; // Set as mountainous terrain
+						}
+					}
+				}
+				
+				return terrainMatrix;
+			}
+			
+			
+			
 		
 			createMatrix(rows, cols) {
 				const matrix = [];
@@ -53,6 +130,8 @@
 				if (this.dataMatrix[row][col].species === -1) {
 					// Cell is dead, toggle it to alive and assign species
 					this.dataMatrix[row][col].toggle(species);
+					// Set killer status based on species number
+					this.dataMatrix[row][col].isKiller = Math.random() < 1 / (species + 1);
 				} else {
 					// Cell is already alive, just update species
 					this.dataMatrix[row][col].species = species;
@@ -63,36 +142,59 @@
 		
 			decideIfCellAliveInNextGen(row, col) {
 				const cell = this.dataMatrix[row][col];
-				const neighborsData = this.numberOfNeighbours(row, col, cell.species); // Remove species argument
-
+				const neighborsData = this.numberOfNeighbours(row, col, cell.species);
+			
+				// Check if the cell is within the infected area
+				const isInInfectedArea = this.isInInfectedArea(row, col);
+			
+				// Check if the current cell is a mountain cell
+				const isMountainCell = this.terrainMatrix[row][col] === 1;
+			
+				// Check if the cell is inside its own region
+				const isInOwnRegion = (row < this.rows / 2 && col < this.cols / 2 && cell.species === 0) ||
+									  (row < this.rows / 2 && col >= this.cols / 2 && cell.species === 1) ||
+									  (row >= this.rows / 2 && col < this.cols / 2 && cell.species === 2) ||
+									  (row >= this.rows / 2 && col >= this.cols / 2 && cell.species === 3);
+			
 				if (cell.isAlive) {
-					if ( neighborsData.allies === 3 || neighborsData.allies === 2 ) {
-
-						
+					if (neighborsData.allies === 3 || neighborsData.allies === 2 || isInOwnRegion) {
 						return true;
 					} else {
-						if (neighborsData.allies === 4){
-							if (Math.round(cell.species/4+Math.random())==1){
-								return true;
-							}
+						if (neighborsData.allies === 4 && Math.round(cell.species / 8 + Math.random()) === 1) {
+							return true;
 						}
 						return false;
 					}
 				} else {
-					if (neighborsData.allies === 3 ) {
-						// Assign the majority species among neighbors to the newly created cell
+					if (isMountainCell) {
+						// Cell is on mountain terrain, prevent it from becoming alive
+						return false;
+					}
+			
+					if (isInOwnRegion) {
+						// Cell is inside its own region, prevent it from dying of underpopulation
+						return true;
+					}
+			
+					if (neighborsData.allies === 3 || (neighborsData.allies === 4 && this.terrainMatrix[row][col] === 1)) {
 						cell.species = neighborsData.majoritySpecies;
 						return true;
 					} else {
-						if (cell.species === 0){
-							if (Math.round(Math.random()+0.49)==1){
-								return true;
-							}
+						// Check if the cell is a killer cell and if it can convert the neighbor
+						if (cell.isKiller && neighborsData.enemies > 0) {
+							return true;
+						}
+			
+						if (cell.species === 0 && Math.round(Math.random()-0.3) === 0) {
+							return true;
 						}
 						return false;
 					}
 				}
 			}
+			
+			
+			
 			
 			numberOfNeighbours(row, col, currentSpecies) {
 				let allies = 0;
@@ -358,20 +460,45 @@
 		
 		document.getElementById('skip-button').addEventListener('click', skipGenerations);
 		
-		function skipGenerations() {
+		async function skipGenerations() {
 			const skipInput = document.getElementById('skip-input').value;
 			const skipCount = parseInt(skipInput);
 			if (!isNaN(skipCount) && skipCount > 0) {
 				for (let i = 0; i < skipCount; i++) {
-					stepGenerationHandler();
+					await skipGeneration();
 				}
 			}
 		}
 		
-		let TIMEOUT_ID;
+		async function skipGeneration() {
+			return new Promise((resolve) => {
+				const newDataMatrix = game.createMatrix(game.rows, game.cols);
+				for (let i = 0; i < game.rows; i++) {
+					for (let j = 0; j < game.cols; j++) {
+						newDataMatrix[i][j].isAlive = game.decideIfCellAliveInNextGen(i, j);
+						newDataMatrix[i][j].species = -1;
+						if (newDataMatrix[i][j].isAlive) {
+							newDataMatrix[i][j].species = game.dataMatrix[i][j].species; // Copy species information
+						}
+					}
+				}
+				resolve(newDataMatrix);
+			}).then((newDataMatrix) => {
+				game.dataMatrix = newDataMatrix; // Replace the main grid with the skipped generation
+				drawGrid();
+			});
+		}
 		
+		
+		
+		let TIMEOUT_ID;
+		let skipWorker;
+
 		function main() {
 			drawGrid();
+
+			// Initialize skip worker
+			skipWorker = new Worker('skipWorker.js');
 		}
 		
 		function drawGrid() {
@@ -381,8 +508,7 @@
 			const regionWidth = canvas.width / 2;
 			const regionHeight = canvas.height / 2;
 			const colors = ['#ffcccc', '#ccffcc', '#ccccff', '#ffffcc']; // Colors for each region
-			const colorss = ['#ffcccc', '#ccffcc', '#222ff', '#faf223']; // Colors for each region
-			color="#212121"
+		
 			// Render background rectangles for each region
 			for (let r = 0; r < 2; r++) {
 				for (let c = 0; c < 2; c++) {
@@ -390,24 +516,38 @@
 					ctx.fillRect(c * regionWidth, r * regionHeight, regionWidth, regionHeight);
 				}
 			}
-
+		
 			for (let i = 0; i < ROWS; i++) {
 				for (let j = 0; j < COLS; j++) {
 					const cell = game.dataMatrix[i][j];
+					const terrain = game.terrainMatrix[i][j]; // Get terrain information
+		
 					if (cell.isAlive) {
 						areAllCellsDead = false;
 						const x = (i + 1) * 10;
 						const y = (j + 1) * 10;
+						DARKEN="1";
 						let originalColor = colors[cell.species];
-						let darkerColor = originalColor.replace("c","1") // Adjust darkness level as needed
+						if (Math.random()<0.3){
+							DARKEN="7";
+						}
+						let darkerColor = originalColor.replace("c", DARKEN); // Adjust darkness level as needed
 						
 						// Set the fillStyle to the darker color
 						ctx.fillStyle = darkerColor;
 						ctx.fillRect(y - 10, x - 10, 10, 10);
+					} else if (terrain === 1) { // If cell is not alive but terrain is mountainous
+						ctx.fillStyle = "#555"; // Color for mountainous terrain
+						ctx.fillRect(j * 10, i * 10, 10, 10); // Render mountain
 					}
 				}
 			}
+		
+			if (areAllCellsDead) {
+				pauseClickHandler();
+			}
 		}
+		
 		function darkenColor(color, amount) {
 			return '#' + color
 				.replace(/^#/, '')
